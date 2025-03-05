@@ -1,7 +1,9 @@
+
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Check, Link, Twitter, MessageCircle, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const TokenForm = () => {
   const { toast } = useToast();
@@ -36,13 +38,38 @@ const TokenForm = () => {
     setAuthorities((prev) => ({ ...prev, [authority]: !prev[authority] }));
   };
 
+  const calculateTotalCost = () => {
+    let cost = 0.2; // Base cost for creating a token
+    if (authorities.revokeFreeze) cost += 0.05;
+    if (authorities.revokeMint) cost += 0.05;
+    if (authorities.revokeUpdate) cost += 0.05;
+    return cost.toFixed(2);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      // Save token data to Supabase
+      const { error } = await supabase.from('tokens').insert({
+        name: formData.name,
+        symbol: formData.symbol,
+        amount: formData.amount,
+        decimals: formData.decimals,
+        owner_address: formData.ownerAddress,
+        website_url: formData.websiteUrl,
+        twitter_url: formData.twitterUrl,
+        telegram_url: formData.telegramUrl,
+        discord_url: formData.discordUrl,
+        revoke_freeze: authorities.revokeFreeze,
+        revoke_mint: authorities.revokeMint,
+        revoke_update: authorities.revokeUpdate,
+        total_cost: parseFloat(calculateTotalCost())
+      });
+
+      if (error) throw error;
+
       setIsSuccess(true);
       
       toast({
@@ -71,15 +98,16 @@ const TokenForm = () => {
           revokeUpdate: true,
         });
       }, 3000);
-    }, 1500);
-  };
-
-  const calculateTotalCost = () => {
-    let cost = 0;
-    if (authorities.revokeFreeze) cost += 0.1;
-    if (authorities.revokeMint) cost += 0.1;
-    if (authorities.revokeUpdate) cost += 0.1;
-    return cost.toFixed(1);
+    } catch (error) {
+      console.error("Error creating token:", error);
+      toast({
+        title: "Error",
+        description: "Failed to create token. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -188,27 +216,50 @@ const TokenForm = () => {
             <h3 className="text-lg font-medium border-b border-gray-800 pb-2 mb-4">Token Authorities</h3>
             
             <AuthorityOption
-              label="Revoke Freeze (+0.1 SOL)"
+              label="Revoke Freeze (+0.05 SOL)"
               checked={authorities.revokeFreeze}
               onChange={() => handleAuthorityToggle('revokeFreeze')}
             />
             
             <AuthorityOption
-              label="Revoke Mint (+0.1 SOL)"
+              label="Revoke Mint (+0.05 SOL)"
               checked={authorities.revokeMint}
               onChange={() => handleAuthorityToggle('revokeMint')}
             />
             
             <AuthorityOption
-              label="Revoke Update (+0.1 SOL)"
+              label="Revoke Update (+0.05 SOL)"
               checked={authorities.revokeUpdate}
               onChange={() => handleAuthorityToggle('revokeUpdate')}
             />
             
-            <div className="mt-4 p-3 bg-blue-900/20 border border-blue-800/30 rounded-lg">
-              <p className="text-sm text-blue-400">
-                Additional cost: <span className="font-medium">{calculateTotalCost()} SOL</span>
-              </p>
+            <div className="mt-6 p-4 bg-blue-900/20 border border-blue-800/30 rounded-lg">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-300">Base cost:</span>
+                <span className="text-sm font-medium text-gray-300">0.2 SOL</span>
+              </div>
+              {authorities.revokeFreeze && (
+                <div className="flex justify-between items-center mt-2">
+                  <span className="text-sm text-gray-300">Revoke Freeze:</span>
+                  <span className="text-sm font-medium text-gray-300">0.05 SOL</span>
+                </div>
+              )}
+              {authorities.revokeMint && (
+                <div className="flex justify-between items-center mt-2">
+                  <span className="text-sm text-gray-300">Revoke Mint:</span>
+                  <span className="text-sm font-medium text-gray-300">0.05 SOL</span>
+                </div>
+              )}
+              {authorities.revokeUpdate && (
+                <div className="flex justify-between items-center mt-2">
+                  <span className="text-sm text-gray-300">Revoke Update:</span>
+                  <span className="text-sm font-medium text-gray-300">0.05 SOL</span>
+                </div>
+              )}
+              <div className="mt-3 pt-3 border-t border-blue-800/30 flex justify-between items-center">
+                <span className="text-sm font-medium text-blue-400">Total cost:</span>
+                <span className="text-sm font-bold text-blue-400">{calculateTotalCost()} SOL</span>
+              </div>
             </div>
           </div>
           

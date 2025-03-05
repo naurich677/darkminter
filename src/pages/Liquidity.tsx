@@ -1,8 +1,14 @@
 
+import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { AlertCircle } from "lucide-react";
 
 const Liquidity = () => {
+  useEffect(() => {
+    // Redirect to Raydium's liquidity page
+    window.location.href = "https://raydium.io/liquidity/";
+  }, []);
+
   return (
     <div className="min-h-screen pt-24 pb-12 px-6 flex items-center justify-center">
       <motion.div
@@ -17,11 +23,19 @@ const Liquidity = () => {
           </div>
         </div>
         
-        <h2 className="text-2xl font-bold mb-4">Coming Soon...</h2>
+        <h2 className="text-2xl font-bold mb-4">Redirecting...</h2>
         <p className="text-gray-400">
-          Our liquidity features are currently under development.
-          Check back soon for updates!
+          You are being redirected to Raydium's liquidity page.
+          If you are not redirected automatically, please click the link below.
         </p>
+        <a 
+          href="https://raydium.io/liquidity/" 
+          className="mt-6 inline-block text-blue-400 hover:text-blue-300 transition-colors"
+          target="_blank" 
+          rel="noopener noreferrer"
+        >
+          Go to Raydium
+        </a>
       </motion.div>
     </div>
   );

@@ -9,7 +9,113 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      referral_uses: {
+        Row: {
+          created_at: string
+          id: string
+          referral_id: string
+          tokens_created: number | null
+          user_address: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          referral_id: string
+          tokens_created?: number | null
+          user_address: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          referral_id?: string
+          tokens_created?: number | null
+          user_address?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_uses_referral_id_fkey"
+            columns: ["referral_id"]
+            isOneToOne: false
+            referencedRelation: "referrals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referrals: {
+        Row: {
+          created_at: string
+          id: string
+          referral_code: string
+          referrer_address: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          referral_code: string
+          referrer_address: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          referral_code?: string
+          referrer_address?: string
+        }
+        Relationships: []
+      }
+      tokens: {
+        Row: {
+          amount: string
+          created_at: string
+          decimals: string
+          discord_url: string | null
+          id: string
+          name: string
+          owner_address: string
+          revoke_freeze: boolean | null
+          revoke_mint: boolean | null
+          revoke_update: boolean | null
+          symbol: string
+          telegram_url: string | null
+          total_cost: number
+          twitter_url: string | null
+          website_url: string | null
+        }
+        Insert: {
+          amount: string
+          created_at?: string
+          decimals: string
+          discord_url?: string | null
+          id?: string
+          name: string
+          owner_address: string
+          revoke_freeze?: boolean | null
+          revoke_mint?: boolean | null
+          revoke_update?: boolean | null
+          symbol: string
+          telegram_url?: string | null
+          total_cost: number
+          twitter_url?: string | null
+          website_url?: string | null
+        }
+        Update: {
+          amount?: string
+          created_at?: string
+          decimals?: string
+          discord_url?: string | null
+          id?: string
+          name?: string
+          owner_address?: string
+          revoke_freeze?: boolean | null
+          revoke_mint?: boolean | null
+          revoke_update?: boolean | null
+          symbol?: string
+          telegram_url?: string | null
+          total_cost?: number
+          twitter_url?: string | null
+          website_url?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

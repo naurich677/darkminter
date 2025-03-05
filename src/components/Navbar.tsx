@@ -2,10 +2,13 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
+import { useToast } from "@/hooks/use-toast";
 
 export const Navbar = () => {
   const location = useLocation();
   const [scrolled, setScrolled] = useState(false);
+  const [walletAddress, setWalletAddress] = useState<string | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -17,8 +20,38 @@ export const Navbar = () => {
     };
 
     window.addEventListener("scroll", handleScroll);
+    
+    // Check if wallet is connected
+    const storedAddress = localStorage.getItem('walletAddress');
+    if (storedAddress) {
+      setWalletAddress(storedAddress);
+    }
+    
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  const connectWallet = () => {
+    // In a real implementation, this would trigger wallet connection
+    // For now, we'll just use a mock address
+    if (walletAddress) {
+      // Disconnect
+      localStorage.removeItem('walletAddress');
+      setWalletAddress(null);
+      toast({
+        title: "Wallet disconnected",
+        description: "Your wallet has been disconnected.",
+      });
+    } else {
+      // Connect
+      const mockAddress = "0x" + Math.random().toString(36).substring(2, 15);
+      localStorage.setItem('walletAddress', mockAddress);
+      setWalletAddress(mockAddress);
+      toast({
+        title: "Wallet connected",
+        description: "Your wallet has been connected successfully.",
+      });
+    }
+  };
 
   return (
     <motion.nav
@@ -51,9 +84,12 @@ export const Navbar = () => {
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.98 }}
-          className="btn-hover bg-primary text-white px-5 py-2 rounded-full text-sm font-medium"
+          onClick={connectWallet}
+          className={`btn-hover ${
+            walletAddress ? "bg-green-600" : "bg-primary"
+          } text-white px-5 py-2 rounded-full text-sm font-medium`}
         >
-          Connect
+          {walletAddress ? "Connected" : "Connect"}
         </motion.button>
       </div>
     </motion.nav>
