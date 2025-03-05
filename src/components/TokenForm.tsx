@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Check, Link, Twitter, MessageCircle, MessageSquare } from "lucide-react";
@@ -310,16 +309,23 @@ const AuthorityOption = ({ label, checked, onChange }: AuthorityOptionProps) => 
       <label htmlFor={label} className="text-sm font-medium cursor-pointer">
         {label}
       </label>
-      <div className="relative inline-block w-10 mr-2 align-middle select-none">
+      <div className="relative inline-block w-10 mr-2 align-middle select-none transition-all duration-200">
         <input
           type="checkbox"
+          name={label}
           id={label}
           checked={checked}
           onChange={onChange}
-          className="sr-only"
+          className="sr-only peer"
         />
-        <div className={`block w-10 h-6 rounded-full ${checked ? 'bg-primary' : 'bg-gray-600'} transition-colors duration-200`}></div>
-        <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform duration-200 ease-in-out ${checked ? 'transform translate-x-4' : ''}`}></div>
+        <div 
+          onClick={onChange}
+          className="block w-10 h-6 rounded-full transition-colors duration-200 cursor-pointer bg-gray-600 peer-checked:bg-primary"
+        ></div>
+        <div 
+          onClick={onChange}
+          className="absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform duration-200 ease-in-out peer-checked:translate-x-4 cursor-pointer"
+        ></div>
       </div>
     </div>
   );
