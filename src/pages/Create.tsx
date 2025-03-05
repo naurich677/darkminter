@@ -1,6 +1,7 @@
 
 import { motion } from "framer-motion";
 import TokenForm from "../components/TokenForm";
+import { Toaster } from "@/components/ui/toaster";
 
 const Create = () => {
   return (
@@ -19,6 +20,7 @@ const Create = () => {
         </motion.div>
         
         <TokenForm />
+        <Toaster />
       </div>
     </div>
   );

@@ -1,15 +1,28 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Check } from "lucide-react";
+import { Check, Link, Twitter, MessageCircle, MessageSquare } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 const TokenForm = () => {
+  const { toast } = useToast();
+  
   const [formData, setFormData] = useState({
     name: "",
     symbol: "",
     amount: "",
     decimals: "18",
     ownerAddress: "",
+    websiteUrl: "",
+    twitterUrl: "",
+    telegramUrl: "",
+    discordUrl: "",
+  });
+
+  const [authorities, setAuthorities] = useState({
+    revokeFreeze: true,
+    revokeMint: true,
+    revokeUpdate: true,
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -18,6 +31,10 @@ const TokenForm = () => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleAuthorityToggle = (authority: keyof typeof authorities) => {
+    setAuthorities((prev) => ({ ...prev, [authority]: !prev[authority] }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -29,6 +46,12 @@ const TokenForm = () => {
       setIsSubmitting(false);
       setIsSuccess(true);
       
+      toast({
+        title: "Success!",
+        description: "Your token has been created successfully.",
+        variant: "default",
+      });
+      
       // Reset success state after 3 seconds
       setTimeout(() => {
         setIsSuccess(false);
@@ -38,9 +61,26 @@ const TokenForm = () => {
           amount: "",
           decimals: "18",
           ownerAddress: "",
+          websiteUrl: "",
+          twitterUrl: "",
+          telegramUrl: "",
+          discordUrl: "",
+        });
+        setAuthorities({
+          revokeFreeze: true,
+          revokeMint: true,
+          revokeUpdate: true,
         });
       }, 3000);
     }, 1500);
+  };
+
+  const calculateTotalCost = () => {
+    let cost = 0;
+    if (authorities.revokeFreeze) cost += 0.1;
+    if (authorities.revokeMint) cost += 0.1;
+    if (authorities.revokeUpdate) cost += 0.1;
+    return cost.toFixed(1);
   };
 
   return (
@@ -52,54 +92,126 @@ const TokenForm = () => {
     >
       <div className="neo-card">
         <form onSubmit={handleSubmit} className="space-y-6">
-          <FormField
-            label="Token Name"
-            name="name"
-            value={formData.name}
-            placeholder="e.g. My Custom Token"
-            onChange={handleChange}
-            required
-          />
+          <div className="space-y-6">
+            <h3 className="text-lg font-medium border-b border-gray-800 pb-2 mb-4">Token Information</h3>
+            
+            <FormField
+              label="Token Name"
+              name="name"
+              value={formData.name}
+              placeholder="e.g. My Custom Token"
+              onChange={handleChange}
+              required
+            />
+            
+            <FormField
+              label="Token Symbol"
+              name="symbol"
+              value={formData.symbol}
+              placeholder="e.g. MCT"
+              onChange={handleChange}
+              required
+            />
+            
+            <FormField
+              label="Total Supply"
+              name="amount"
+              type="number"
+              value={formData.amount}
+              placeholder="e.g. 1000000"
+              onChange={handleChange}
+              required
+            />
+            
+            <FormField
+              label="Decimals"
+              name="decimals"
+              type="number"
+              min="0"
+              max="18"
+              value={formData.decimals}
+              placeholder="18"
+              onChange={handleChange}
+              required
+            />
+            
+            <FormField
+              label="Owner Address"
+              name="ownerAddress"
+              value={formData.ownerAddress}
+              placeholder="0x..."
+              onChange={handleChange}
+              required
+            />
+          </div>
           
-          <FormField
-            label="Token Symbol"
-            name="symbol"
-            value={formData.symbol}
-            placeholder="e.g. MCT"
-            onChange={handleChange}
-            required
-          />
+          <div className="space-y-6">
+            <h3 className="text-lg font-medium border-b border-gray-800 pb-2 mb-4">Social Media</h3>
+            
+            <FormField
+              label="Website URL"
+              name="websiteUrl"
+              value={formData.websiteUrl}
+              placeholder="https://yourwebsite.com"
+              onChange={handleChange}
+              icon={<Link className="h-4 w-4 text-gray-400" />}
+            />
+            
+            <FormField
+              label="Twitter/X URL"
+              name="twitterUrl"
+              value={formData.twitterUrl}
+              placeholder="https://twitter.com/yourusername"
+              onChange={handleChange}
+              icon={<Twitter className="h-4 w-4 text-gray-400" />}
+            />
+            
+            <FormField
+              label="Telegram URL"
+              name="telegramUrl"
+              value={formData.telegramUrl}
+              placeholder="https://t.me/yourchannel"
+              onChange={handleChange}
+              icon={<MessageCircle className="h-4 w-4 text-gray-400" />}
+            />
+            
+            <FormField
+              label="Discord URL"
+              name="discordUrl"
+              value={formData.discordUrl}
+              placeholder="https://discord.gg/yourinvite"
+              onChange={handleChange}
+              icon={<MessageSquare className="h-4 w-4 text-gray-400" />}
+            />
+          </div>
           
-          <FormField
-            label="Total Supply"
-            name="amount"
-            type="number"
-            value={formData.amount}
-            placeholder="e.g. 1000000"
-            onChange={handleChange}
-            required
-          />
-          
-          <FormField
-            label="Decimals"
-            name="decimals"
-            type="number"
-            min="0"
-            max="18"
-            value={formData.decimals}
-            placeholder="18"
-            onChange={handleChange}
-            required
-          />
-          
-          <FormField
-            label="Owner Address"
-            name="ownerAddress"
-            value={formData.ownerAddress}
-            placeholder="0x..."
-            onChange={handleChange}
-            required
-          />
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium border-b border-gray-800 pb-2 mb-4">Token Authorities</h3>
+            
+            <AuthorityOption
+              label="Revoke Freeze (+0.1 SOL)"
+              checked={authorities.revokeFreeze}
+              onChange={() => handleAuthorityToggle('revokeFreeze')}
+            />
+            
+            <AuthorityOption
+              label="Revoke Mint (+0.1 SOL)"
+              checked={authorities.revokeMint}
+              onChange={() => handleAuthorityToggle('revokeMint')}
+            />
+            
+            <AuthorityOption
+              label="Revoke Update (+0.1 SOL)"
+              checked={authorities.revokeUpdate}
+              onChange={() => handleAuthorityToggle('revokeUpdate')}
+            />
+            
+            <div className="mt-4 p-3 bg-blue-900/20 border border-blue-800/30 rounded-lg">
+              <p className="text-sm text-blue-400">
+                Additional cost: <span className="font-medium">{calculateTotalCost()} SOL</span>
+              </p>
+            </div>
+          </div>
           
           <motion.button
             whileHover={{ scale: 1.02 }}
@@ -143,6 +255,7 @@ interface FormFieldProps {
   type?: string;
   min?: string;
   max?: string;
+  icon?: React.ReactNode;
 }
 
 const FormField = ({ 
@@ -154,25 +267,60 @@ const FormField = ({
   required = false,
   type = "text",
   min,
-  max
+  max,
+  icon
 }: FormFieldProps) => {
   return (
     <div className="space-y-2">
       <label htmlFor={name} className="block text-sm font-medium text-gray-300">
         {label}
       </label>
-      <input
-        type={type}
-        id={name}
-        name={name}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        required={required}
-        min={min}
-        max={max}
-        className="w-full bg-muted border border-border text-foreground rounded-lg px-4 py-3 focus:outline-none focus:ring-1 focus:ring-primary transition-all duration-200"
-      />
+      <div className="relative">
+        {icon && (
+          <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+            {icon}
+          </div>
+        )}
+        <input
+          type={type}
+          id={name}
+          name={name}
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          required={required}
+          min={min}
+          max={max}
+          className={`w-full bg-muted border border-border text-foreground rounded-lg ${icon ? 'pl-10' : 'px-4'} py-3 focus:outline-none focus:ring-1 focus:ring-primary transition-all duration-200`}
+        />
+      </div>
+    </div>
+  );
+};
+
+interface AuthorityOptionProps {
+  label: string;
+  checked: boolean;
+  onChange: () => void;
+}
+
+const AuthorityOption = ({ label, checked, onChange }: AuthorityOptionProps) => {
+  return (
+    <div className="flex items-center justify-between p-3 bg-muted/50 border border-border rounded-lg">
+      <label htmlFor={label} className="text-sm font-medium cursor-pointer">
+        {label}
+      </label>
+      <div className="relative inline-block w-10 mr-2 align-middle select-none">
+        <input
+          type="checkbox"
+          id={label}
+          checked={checked}
+          onChange={onChange}
+          className="sr-only"
+        />
+        <div className={`block w-10 h-6 rounded-full ${checked ? 'bg-primary' : 'bg-gray-600'} transition-colors duration-200`}></div>
+        <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform duration-200 ease-in-out ${checked ? 'transform translate-x-4' : ''}`}></div>
+      </div>
     </div>
   );
 };
