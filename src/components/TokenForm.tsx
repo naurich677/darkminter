@@ -1,12 +1,14 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Check, Link, Twitter, MessageCircle, MessageSquare } from "lucide-react";
+import { Check, Link, Twitter, MessageCircle, MessageSquare, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useLocation } from "react-router-dom";
 
 const TokenForm = () => {
   const { toast } = useToast();
+  const location = useLocation();
   
   const [formData, setFormData] = useState({
     name: "",
@@ -28,10 +30,97 @@ const TokenForm = () => {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [referralCode, setReferralCode] = useState<string | null>(null);
+
+  // Parse URL for referral code
+  useEffect(() => {
+    const queryParams = new URLSearchParams(location.search);
+    const ref = queryParams.get('ref');
+    if (ref) {
+      setReferralCode(ref);
+      console.log("Referral code detected:", ref);
+    }
+  }, [location]);
+
+  // Populate owner address from local storage if available
+  useEffect(() => {
+    const storedAddress = localStorage.getItem('walletAddress');
+    if (storedAddress) {
+      setFormData(prev => ({ ...prev, ownerAddress: storedAddress }));
+    }
+  }, []);
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+    
+    if (!formData.name.trim()) {
+      newErrors.name = "Token name is required";
+    }
+    
+    if (!formData.symbol.trim()) {
+      newErrors.symbol = "Token symbol is required";
+    } else if (formData.symbol.length > 10) {
+      newErrors.symbol = "Symbol must be 10 characters or less";
+    }
+    
+    if (!formData.amount.trim()) {
+      newErrors.amount = "Total supply is required";
+    } else if (isNaN(Number(formData.amount)) || Number(formData.amount) <= 0) {
+      newErrors.amount = "Total supply must be a positive number";
+    }
+    
+    if (!formData.decimals.trim()) {
+      newErrors.decimals = "Decimals is required";
+    } else if (isNaN(Number(formData.decimals)) || Number(formData.decimals) < 0 || Number(formData.decimals) > 18) {
+      newErrors.decimals = "Decimals must be between 0 and 18";
+    }
+    
+    if (!formData.ownerAddress.trim()) {
+      newErrors.ownerAddress = "Owner address is required";
+    }
+    
+    // Validate URLs if provided
+    if (formData.websiteUrl && !isValidUrl(formData.websiteUrl)) {
+      newErrors.websiteUrl = "Please enter a valid URL";
+    }
+    
+    if (formData.twitterUrl && !isValidUrl(formData.twitterUrl)) {
+      newErrors.twitterUrl = "Please enter a valid URL";
+    }
+    
+    if (formData.telegramUrl && !isValidUrl(formData.telegramUrl)) {
+      newErrors.telegramUrl = "Please enter a valid URL";
+    }
+    
+    if (formData.discordUrl && !isValidUrl(formData.discordUrl)) {
+      newErrors.discordUrl = "Please enter a valid URL";
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const isValidUrl = (url: string) => {
+    try {
+      new URL(url);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    // Clear error when user types
+    if (errors[name]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
   };
 
   const handleAuthorityToggle = (authority: keyof typeof authorities) => {
@@ -46,13 +135,58 @@ const TokenForm = () => {
     return cost.toFixed(2);
   };
 
+  const handleReferralProcess = async (newTokenData: any) => {
+    if (!referralCode) return;
+    
+    try {
+      // Find the referral by code
+      const { data: referralData, error: referralError } = await supabase
+        .from('referrals')
+        .select('id, referrer_address')
+        .eq('referral_code', referralCode)
+        .single();
+      
+      if (referralError || !referralData) {
+        console.error("Error finding referral:", referralError);
+        return;
+      }
+      
+      // Record the referral use
+      const { error: usageError } = await supabase
+        .from('referral_uses')
+        .insert({
+          referral_id: referralData.id,
+          user_address: formData.ownerAddress,
+          tokens_created: 1
+        });
+      
+      if (usageError) {
+        console.error("Error recording referral use:", usageError);
+      } else {
+        console.log("Referral recorded successfully");
+      }
+    } catch (error) {
+      console.error("Error processing referral:", error);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      toast({
+        title: "Form Error",
+        description: "Please correct the errors in the form.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsSubmitting(true);
     
     try {
       // Save token data to Supabase
-      const { error } = await supabase.from('tokens').insert({
+      const { data, error } = await supabase.from('tokens').insert({
         name: formData.name,
         symbol: formData.symbol,
         amount: formData.amount,
@@ -69,6 +203,9 @@ const TokenForm = () => {
       });
 
       if (error) throw error;
+      
+      // Process referral if applicable
+      await handleReferralProcess(data);
 
       setIsSuccess(true);
       
@@ -86,7 +223,7 @@ const TokenForm = () => {
           symbol: "",
           amount: "",
           decimals: "18",
-          ownerAddress: "",
+          ownerAddress: localStorage.getItem('walletAddress') || "",
           websiteUrl: "",
           twitterUrl: "",
           telegramUrl: "",
@@ -118,6 +255,17 @@ const TokenForm = () => {
       className="w-full max-w-md mx-auto"
     >
       <div className="neo-card">
+        {referralCode && (
+          <div className="mb-6 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg flex items-center">
+            <div className="mr-3 text-blue-400">
+              <Check className="h-5 w-5" />
+            </div>
+            <div>
+              <span className="text-sm text-blue-400">Referral code applied: {referralCode}</span>
+            </div>
+          </div>
+        )}
+        
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-6">
             <h3 className="text-lg font-medium border-b border-gray-800 pb-2 mb-4">Token Information</h3>
@@ -128,6 +276,7 @@ const TokenForm = () => {
               value={formData.name}
               placeholder="e.g. My Custom Token"
               onChange={handleChange}
+              error={errors.name}
               required
             />
             
@@ -137,6 +286,7 @@ const TokenForm = () => {
               value={formData.symbol}
               placeholder="e.g. MCT"
               onChange={handleChange}
+              error={errors.symbol}
               required
             />
             
@@ -147,6 +297,7 @@ const TokenForm = () => {
               value={formData.amount}
               placeholder="e.g. 1000000"
               onChange={handleChange}
+              error={errors.amount}
               required
             />
             
@@ -159,6 +310,7 @@ const TokenForm = () => {
               value={formData.decimals}
               placeholder="18"
               onChange={handleChange}
+              error={errors.decimals}
               required
             />
             
@@ -168,6 +320,7 @@ const TokenForm = () => {
               value={formData.ownerAddress}
               placeholder="0x..."
               onChange={handleChange}
+              error={errors.ownerAddress}
               required
             />
           </div>
@@ -181,6 +334,7 @@ const TokenForm = () => {
               value={formData.websiteUrl}
               placeholder="https://yourwebsite.com"
               onChange={handleChange}
+              error={errors.websiteUrl}
               icon={<Link className="h-4 w-4 text-gray-400" />}
             />
             
@@ -190,6 +344,7 @@ const TokenForm = () => {
               value={formData.twitterUrl}
               placeholder="https://twitter.com/yourusername"
               onChange={handleChange}
+              error={errors.twitterUrl}
               icon={<Twitter className="h-4 w-4 text-gray-400" />}
             />
             
@@ -199,6 +354,7 @@ const TokenForm = () => {
               value={formData.telegramUrl}
               placeholder="https://t.me/yourchannel"
               onChange={handleChange}
+              error={errors.telegramUrl}
               icon={<MessageCircle className="h-4 w-4 text-gray-400" />}
             />
             
@@ -208,6 +364,7 @@ const TokenForm = () => {
               value={formData.discordUrl}
               placeholder="https://discord.gg/yourinvite"
               onChange={handleChange}
+              error={errors.discordUrl}
               icon={<MessageSquare className="h-4 w-4 text-gray-400" />}
             />
           </div>
@@ -306,6 +463,7 @@ interface FormFieldProps {
   min?: string;
   max?: string;
   icon?: React.ReactNode;
+  error?: string;
 }
 
 const FormField = ({ 
@@ -318,7 +476,8 @@ const FormField = ({
   type = "text",
   min,
   max,
-  icon
+  icon,
+  error
 }: FormFieldProps) => {
   return (
     <div className="space-y-2">
@@ -341,8 +500,14 @@ const FormField = ({
           required={required}
           min={min}
           max={max}
-          className={`w-full bg-muted border border-border text-foreground rounded-lg ${icon ? 'pl-10' : 'px-4'} py-3 focus:outline-none focus:ring-1 focus:ring-primary transition-all duration-200`}
+          className={`w-full bg-muted border ${error ? 'border-red-500' : 'border-border'} text-foreground rounded-lg ${icon ? 'pl-10' : 'px-4'} py-3 focus:outline-none focus:ring-1 focus:ring-primary transition-all duration-200`}
         />
+        {error && (
+          <div className="flex items-center mt-1 text-red-500 text-xs">
+            <AlertCircle className="h-3 w-3 mr-1" />
+            {error}
+          </div>
+        )}
       </div>
     </div>
   );
