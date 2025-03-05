@@ -1,7 +1,6 @@
-
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Check, Link, Twitter, MessageCircle, MessageSquare, AlertCircle } from "lucide-react";
+import { Check, Link, Twitter, MessageCircle, MessageSquare, AlertCircle, Code } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useLocation } from "react-router-dom";
@@ -20,6 +19,7 @@ const TokenForm = () => {
     twitterUrl: "",
     telegramUrl: "",
     discordUrl: "",
+    customReferralCode: "",
   });
 
   const [authorities, setAuthorities] = useState({
@@ -33,7 +33,6 @@ const TokenForm = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [referralCode, setReferralCode] = useState<string | null>(null);
 
-  // Parse URL for referral code
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
     const ref = queryParams.get('ref');
@@ -43,7 +42,6 @@ const TokenForm = () => {
     }
   }, [location]);
 
-  // Populate owner address from local storage if available
   useEffect(() => {
     const storedAddress = localStorage.getItem('walletAddress');
     if (storedAddress) {
@@ -80,7 +78,6 @@ const TokenForm = () => {
       newErrors.ownerAddress = "Owner address is required";
     }
     
-    // Validate URLs if provided
     if (formData.websiteUrl && !isValidUrl(formData.websiteUrl)) {
       newErrors.websiteUrl = "Please enter a valid URL";
     }
@@ -95,6 +92,10 @@ const TokenForm = () => {
     
     if (formData.discordUrl && !isValidUrl(formData.discordUrl)) {
       newErrors.discordUrl = "Please enter a valid URL";
+    }
+    
+    if (formData.customReferralCode && formData.customReferralCode.length < 3) {
+      newErrors.customReferralCode = "Referral code must be at least 3 characters";
     }
     
     setErrors(newErrors);
@@ -113,7 +114,6 @@ const TokenForm = () => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    // Clear error when user types
     if (errors[name]) {
       setErrors(prev => {
         const newErrors = { ...prev };
@@ -139,7 +139,6 @@ const TokenForm = () => {
     if (!referralCode) return;
     
     try {
-      // Find the referral by code
       const { data: referralData, error: referralError } = await supabase
         .from('referrals')
         .select('id, referrer_address')
@@ -151,7 +150,6 @@ const TokenForm = () => {
         return;
       }
       
-      // Record the referral use
       const { error: usageError } = await supabase
         .from('referral_uses')
         .insert({
@@ -185,7 +183,6 @@ const TokenForm = () => {
     setIsSubmitting(true);
     
     try {
-      // Save token data to Supabase
       const { data, error } = await supabase.from('tokens').insert({
         name: formData.name,
         symbol: formData.symbol,
@@ -204,7 +201,28 @@ const TokenForm = () => {
 
       if (error) throw error;
       
-      // Process referral if applicable
+      if (formData.customReferralCode && formData.customReferralCode.trim() !== "") {
+        const { error: referralError } = await supabase.from('referrals').insert({
+          referrer_address: formData.ownerAddress,
+          referral_code: formData.customReferralCode.trim()
+        });
+        
+        if (referralError) {
+          console.error("Error creating referral code:", referralError);
+          toast({
+            title: "Referral Code Error",
+            description: "This referral code is already taken. Please try another.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Referral Code Created",
+            description: `Your referral code "${formData.customReferralCode}" has been created successfully.`,
+            variant: "default",
+          });
+        }
+      }
+      
       await handleReferralProcess(data);
 
       setIsSuccess(true);
@@ -215,7 +233,6 @@ const TokenForm = () => {
         variant: "default",
       });
       
-      // Reset success state after 3 seconds
       setTimeout(() => {
         setIsSuccess(false);
         setFormData({
@@ -228,6 +245,7 @@ const TokenForm = () => {
           twitterUrl: "",
           telegramUrl: "",
           discordUrl: "",
+          customReferralCode: "",
         });
         setAuthorities({
           revokeFreeze: true,
@@ -367,6 +385,23 @@ const TokenForm = () => {
               error={errors.discordUrl}
               icon={<MessageSquare className="h-4 w-4 text-gray-400" />}
             />
+          </div>
+          
+          <div className="space-y-6">
+            <h3 className="text-lg font-medium border-b border-gray-800 pb-2 mb-4">Your Referral Code</h3>
+            
+            <FormField
+              label="Create Your Referral Code"
+              name="customReferralCode"
+              value={formData.customReferralCode}
+              placeholder="e.g. MY_UNIQUE_CODE"
+              onChange={handleChange}
+              error={errors.customReferralCode}
+              icon={<Code className="h-4 w-4 text-gray-400" />}
+            />
+            <p className="text-xs text-gray-400 mt-2">
+              Create a unique referral code to earn rewards when others use it.
+            </p>
           </div>
           
           <div className="space-y-4">
