@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Check, Link, Twitter, MessageCircle, MessageSquare, AlertCircle, Code } from "lucide-react";
@@ -15,6 +16,7 @@ const TokenForm = () => {
     amount: "",
     decimals: "18",
     ownerAddress: "",
+    referralCode: "", // Добавляем новое поле для ввода реферального кода
     websiteUrl: "",
     twitterUrl: "",
     telegramUrl: "",
@@ -38,6 +40,7 @@ const TokenForm = () => {
     const ref = queryParams.get('ref');
     if (ref) {
       setReferralCode(ref);
+      setFormData(prev => ({ ...prev, referralCode: ref })); // Заполняем поле, если код был в URL
       console.log("Referral code detected:", ref);
     }
   }, [location]);
@@ -114,6 +117,12 @@ const TokenForm = () => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    
+    // Если пользователь изменяет поле referralCode, обновляем также состояние referralCode
+    if (name === 'referralCode') {
+      setReferralCode(value || null);
+    }
+    
     if (errors[name]) {
       setErrors(prev => {
         const newErrors = { ...prev };
@@ -136,13 +145,14 @@ const TokenForm = () => {
   };
 
   const handleReferralProcess = async (newTokenData: any) => {
-    if (!referralCode) return;
+    // Используем значение из formData.referralCode вместо referralCode из состояния
+    if (!formData.referralCode) return;
     
     try {
       const { data: referralData, error: referralError } = await supabase
         .from('referrals')
         .select('id, referrer_address')
-        .eq('referral_code', referralCode)
+        .eq('referral_code', formData.referralCode)
         .single();
       
       if (referralError || !referralData) {
@@ -340,6 +350,16 @@ const TokenForm = () => {
               onChange={handleChange}
               error={errors.ownerAddress}
               required
+            />
+            
+            <FormField
+              label="Enter Referral Code"
+              name="referralCode"
+              value={formData.referralCode}
+              placeholder="e.g. FRIEND_CODE"
+              onChange={handleChange}
+              error={errors.referralCode}
+              icon={<Code className="h-4 w-4 text-gray-400" />}
             />
           </div>
           
