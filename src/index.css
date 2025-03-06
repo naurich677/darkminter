@@ -1,41 +1,40 @@
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 0 0% 2%;
+    --background: 240 10% 3.9%;
     --foreground: 0 0% 98%;
 
-    --card: 0 0% 4%;
-    --card-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
 
-    --popover: 0 0% 4%;
+    --popover: 240 10% 3.9%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 221 83% 53%;
-    --primary-foreground: 0 0% 100%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
 
-    --secondary: 0 0% 9%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+
+    --primary: 262.1 83.3% 57.8%;
+    --primary-foreground: 210 20% 98%;
+
+    --secondary: 240 3.7% 15.9%;
     --secondary-foreground: 0 0% 98%;
 
-    --muted: 0 0% 15%;
-    --muted-foreground: 0 0% 65%;
-
-    --accent: 0 0% 9%;
+    --accent: 240 3.7% 15.9%;
     --accent-foreground: 0 0% 98%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 0 0% 15%;
-    --input: 0 0% 15%;
-    --ring: 0 0% 70%;
+    --ring: 240 4.9% 83.9%;
 
-    --radius: 0.75rem;
+    --radius: 0.5rem;
   }
 }
 
@@ -43,41 +42,83 @@
   * {
     @apply border-border;
   }
-  
-  html, body {
-    @apply bg-background text-foreground antialiased;
-  }
-
-  .glass {
-    @apply backdrop-blur-md bg-white/5 border border-white/10;
-  }
-  
-  .neo-card {
-    @apply bg-card rounded-2xl border border-white/5 shadow-lg p-6;
-  }
-  
-  .hover-scale {
-    @apply transition-transform duration-300 hover:scale-[1.02];
-  }
-  
-  .btn-hover {
-    @apply relative overflow-hidden transition-all duration-300 hover:shadow-[0_0_20px_rgba(59,130,246,0.3)] before:absolute before:inset-0 before:w-full before:h-full before:bg-primary/10 before:translate-x-[-110%] before:skew-x-[30deg] before:transition-transform before:ease-out before:duration-500 hover:before:translate-x-[110%];
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
 
-::-webkit-scrollbar {
-  width: 6px;
+.neo-card {
+  @apply bg-background/80 backdrop-blur-sm border border-border rounded-xl p-6 shadow-md;
 }
 
-::-webkit-scrollbar-track {
-  background: #0a0a0a;
+.glass {
+  @apply bg-black/30 backdrop-blur-md;
 }
 
-::-webkit-scrollbar-thumb {
-  background: #3b3b3b;
-  border-radius: 10px;
+.btn-hover {
+  @apply transition-all duration-200 hover:shadow-[0_0_15px_rgba(124,58,237,0.5)] active:shadow-[0_0_5px_rgba(124,58,237,0.5)];
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #4d4d4d;
+.hover-scale {
+  @apply transition-all duration-200 hover:scale-[1.02];
+}
+
+/* Wallet adapter custom styles */
+.wallet-adapter-button {
+  background-color: theme('colors.primary.DEFAULT') !important;
+  font-family: inherit !important;
+  font-size: 0.875rem !important;
+  padding: 0.5rem 1.25rem !important;
+  border-radius: 9999px !important;
+  height: auto !important;
+  line-height: normal !important;
+  font-weight: 500 !important;
+}
+
+.wallet-adapter-button:hover {
+  background-color: theme('colors.primary.500') !important;
+  transform: scale(1.05);
+}
+
+.wallet-adapter-button:active {
+  transform: scale(0.98);
+}
+
+.wallet-adapter-dropdown {
+  display: flex;
+}
+
+.wallet-adapter-modal-wrapper {
+  background-color: theme('colors.background.DEFAULT') !important;
+  border: 1px solid theme('colors.border.DEFAULT') !important;
+}
+
+.wallet-adapter-modal-button-close {
+  background-color: theme('colors.secondary.DEFAULT') !important;
+}
+
+.wallet-adapter-modal-content {
+  color: theme('colors.foreground.DEFAULT') !important;
+}
+
+.wallet-adapter-modal-button-close svg {
+  fill: white !important;
+}
+
+.wallet-adapter-modal-title {
+  color: white !important;
+}
+
+.wallet-adapter-modal-list-more {
+  color: theme('colors.primary.DEFAULT') !important;
+}
+
+.wallet-adapter-button-end-icon,
+.wallet-adapter-button-start-icon,
+.wallet-adapter-button-end-icon img,
+.wallet-adapter-button-start-icon img {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }

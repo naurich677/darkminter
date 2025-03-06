@@ -1,14 +1,15 @@
-
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
+import { useWallet } from "@solana/wallet-adapter-react";
+import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 
 export const Navbar = () => {
   const location = useLocation();
   const [scrolled, setScrolled] = useState(false);
-  const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const { toast } = useToast();
+  const { publicKey, wallet, disconnect } = useWallet();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -21,36 +22,46 @@ export const Navbar = () => {
 
     window.addEventListener("scroll", handleScroll);
     
-    // Check if wallet is connected
-    const storedAddress = localStorage.getItem('walletAddress');
-    if (storedAddress) {
-      setWalletAddress(storedAddress);
-    }
-    
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const connectWallet = () => {
-    // In a real implementation, this would trigger wallet connection
-    // For now, we'll just use a mock address
-    if (walletAddress) {
-      // Disconnect
-      localStorage.removeItem('walletAddress');
-      setWalletAddress(null);
-      toast({
-        title: "Wallet disconnected",
-        description: "Your wallet has been disconnected.",
-      });
-    } else {
-      // Connect
-      const mockAddress = "0x" + Math.random().toString(36).substring(2, 15);
-      localStorage.setItem('walletAddress', mockAddress);
-      setWalletAddress(mockAddress);
+  useEffect(() => {
+    if (publicKey) {
+      localStorage.setItem('walletAddress', publicKey.toString());
       toast({
         title: "Wallet connected",
         description: "Your wallet has been connected successfully.",
       });
+    } else {
+      localStorage.removeItem('walletAddress');
     }
+  }, [publicKey, toast]);
+
+  const handleDisconnect = async () => {
+    try {
+      await disconnect();
+      toast({
+        title: "Wallet disconnected",
+        description: "Your wallet has been disconnected.",
+      });
+    } catch (error) {
+      console.error("Error disconnecting wallet:", error);
+    }
+  };
+
+  const CustomWalletButton = () => {
+    return publicKey ? (
+      <motion.button
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.98 }}
+        onClick={handleDisconnect}
+        className="btn-hover bg-green-600 text-white px-5 py-2 rounded-full text-sm font-medium"
+      >
+        Connected
+      </motion.button>
+    ) : (
+      <WalletMultiButton className="btn-hover bg-primary text-white px-5 py-2 rounded-full text-sm font-medium" />
+    );
   };
 
   return (
@@ -81,16 +92,7 @@ export const Navbar = () => {
           </NavLink>
         </div>
 
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={connectWallet}
-          className={`btn-hover ${
-            walletAddress ? "bg-green-600" : "bg-primary"
-          } text-white px-5 py-2 rounded-full text-sm font-medium`}
-        >
-          {walletAddress ? "Connected" : "Connect"}
-        </motion.button>
+        <CustomWalletButton />
       </div>
     </motion.nav>
   );
