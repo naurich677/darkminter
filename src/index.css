@@ -90,16 +90,16 @@
 }
 
 .wallet-adapter-modal-wrapper {
-  background-color: theme('colors.background.DEFAULT') !important;
-  border: 1px solid theme('colors.border.DEFAULT') !important;
+  background-color: hsl(var(--background)) !important;
+  border: 1px solid hsl(var(--border)) !important;
 }
 
 .wallet-adapter-modal-button-close {
-  background-color: theme('colors.secondary.DEFAULT') !important;
+  background-color: hsl(var(--secondary)) !important;
 }
 
 .wallet-adapter-modal-content {
-  color: theme('colors.foreground.DEFAULT') !important;
+  color: hsl(var(--foreground)) !important;
 }
 
 .wallet-adapter-modal-button-close svg {
@@ -111,7 +111,7 @@
 }
 
 .wallet-adapter-modal-list-more {
-  color: theme('colors.primary.DEFAULT') !important;
+  color: hsl(var(--primary)) !important;
 }
 
 .wallet-adapter-button-end-icon,
