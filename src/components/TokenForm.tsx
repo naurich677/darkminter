@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Check, Link, Twitter, MessageCircle, MessageSquare, AlertCircle, Code } from "lucide-react";
@@ -251,6 +250,7 @@ const TokenForm = () => {
           amount: "",
           decimals: "18",
           ownerAddress: localStorage.getItem('walletAddress') || "",
+          referralCode: "", // Добавляем поле referralCode в initialState
           websiteUrl: "",
           twitterUrl: "",
           telegramUrl: "",
