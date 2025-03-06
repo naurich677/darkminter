@@ -18,11 +18,12 @@ import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import {
   PhantomWalletAdapter,
   SolflareWalletAdapter,
-  BackpackWalletAdapter,
-  BraveWalletAdapter,
-  CoinbaseWalletAdapter,
-  SlopeWalletAdapter,
   TorusWalletAdapter,
+  LedgerWalletAdapter,
+  SolletWalletAdapter,
+  SolongWalletAdapter,
+  CloverWalletAdapter,
+  MathWalletAdapter,
 } from "@solana/wallet-adapter-wallets";
 import { clusterApiUrl } from "@solana/web3.js";
 import { useMemo } from "react";
@@ -42,10 +43,11 @@ const App = () => {
     () => [
       new PhantomWalletAdapter(),
       new SolflareWalletAdapter(),
-      new BackpackWalletAdapter(),
-      new BraveWalletAdapter(),
-      new CoinbaseWalletAdapter(),
-      new SlopeWalletAdapter(),
+      new LedgerWalletAdapter(),
+      new SolletWalletAdapter(),
+      new SolongWalletAdapter(),
+      new CloverWalletAdapter(),
+      new MathWalletAdapter(),
       new TorusWalletAdapter(),
     ],
     []
