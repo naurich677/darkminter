@@ -4,10 +4,15 @@ import { Check, Link, Twitter, MessageCircle, MessageSquare, AlertCircle, Code }
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useLocation } from "react-router-dom";
+import { useWallet, useConnection } from "@solana/wallet-adapter-react";
+import { PublicKey, Transaction, Keypair, SystemProgram, sendAndConfirmTransaction } from "@solana/web3.js";
+import { Token, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 
 const TokenForm = () => {
   const { toast } = useToast();
   const location = useLocation();
+  const { publicKey, sendTransaction } = useWallet();
+  const { connection } = useConnection();
   
   const [formData, setFormData] = useState({
     name: "",
@@ -15,7 +20,7 @@ const TokenForm = () => {
     amount: "",
     decimals: "18",
     ownerAddress: "",
-    referralCode: "", // Добавляем новое поле для ввода реферального кода
+    referralCode: "",
     websiteUrl: "",
     twitterUrl: "",
     telegramUrl: "",
@@ -33,13 +38,14 @@ const TokenForm = () => {
   const [isSuccess, setIsSuccess] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [referralCode, setReferralCode] = useState<string | null>(null);
+  const [createdTokenAddress, setCreatedTokenAddress] = useState<string | null>(null);
 
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
     const ref = queryParams.get('ref');
     if (ref) {
       setReferralCode(ref);
-      setFormData(prev => ({ ...prev, referralCode: ref })); // Заполняем поле, если код был в URL
+      setFormData(prev => ({ ...prev, referralCode: ref }));
       console.log("Referral code detected:", ref);
     }
   }, [location]);
@@ -117,7 +123,6 @@ const TokenForm = () => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     
-    // Если пользователь изменяет поле referralCode, обновляем также состояние referralCode
     if (name === 'referralCode') {
       setReferralCode(value || null);
     }
@@ -136,15 +141,80 @@ const TokenForm = () => {
   };
 
   const calculateTotalCost = () => {
-    let cost = 0.2; // Base cost for creating a token
+    let cost = 0.2;
     if (authorities.revokeFreeze) cost += 0.05;
     if (authorities.revokeMint) cost += 0.05;
     if (authorities.revokeUpdate) cost += 0.05;
     return cost.toFixed(2);
   };
 
+  const createSolanaToken = async (): Promise<string | null> => {
+    if (!publicKey || !connection) {
+      toast({
+        title: "Wallet Connection Required",
+        description: "Please connect your wallet to create a token.",
+        variant: "destructive",
+      });
+      return null;
+    }
+
+    try {
+      const mintAccount = Keypair.generate();
+      
+      const mintDecimals = Number(formData.decimals);
+      
+      const mintRent = await connection.getMinimumBalanceForRentExemption(Token.getMintLen());
+      
+      const createTokenTransaction = new Transaction().add(
+        SystemProgram.createAccount({
+          fromPubkey: publicKey,
+          newAccountPubkey: mintAccount.publicKey,
+          space: Token.getMintLen(),
+          lamports: mintRent,
+          programId: TOKEN_PROGRAM_ID,
+        }),
+        Token.createInitMintInstruction(
+          TOKEN_PROGRAM_ID,
+          mintAccount.publicKey,
+          mintDecimals,
+          publicKey,
+          publicKey
+        )
+      );
+      
+      const totalSupply = Number(formData.amount) * Math.pow(10, mintDecimals);
+      
+      toast({
+        title: "Creating Token",
+        description: "Please approve the transaction in your wallet.",
+        variant: "default",
+      });
+
+      const signature = await sendTransaction(createTokenTransaction, connection, {
+        signers: [mintAccount]
+      });
+      
+      await connection.confirmTransaction(signature, 'confirmed');
+      
+      toast({
+        title: "Token Created",
+        description: `Your token has been created with address: ${mintAccount.publicKey.toString()}`,
+        variant: "default",
+      });
+      
+      return mintAccount.publicKey.toString();
+    } catch (error) {
+      console.error("Error creating token:", error);
+      toast({
+        title: "Token Creation Failed",
+        description: "An error occurred while creating your token.",
+        variant: "destructive",
+      });
+      return null;
+    }
+  };
+
   const handleReferralProcess = async (newTokenData: any) => {
-    // Используем значение из formData.referralCode вместо referralCode из состояния
     if (!formData.referralCode) return;
     
     try {
@@ -192,12 +262,21 @@ const TokenForm = () => {
     setIsSubmitting(true);
     
     try {
+      const tokenAddress = await createSolanaToken();
+      
+      if (!tokenAddress) {
+        throw new Error("Failed to create token on Solana");
+      }
+      
+      setCreatedTokenAddress(tokenAddress);
+      
       const { data, error } = await supabase.from('tokens').insert({
         name: formData.name,
         symbol: formData.symbol,
         amount: formData.amount,
         decimals: formData.decimals,
         owner_address: formData.ownerAddress,
+        token_address: tokenAddress,
         website_url: formData.websiteUrl,
         twitter_url: formData.twitterUrl,
         telegram_url: formData.telegramUrl,
@@ -238,7 +317,7 @@ const TokenForm = () => {
       
       toast({
         title: "Success!",
-        description: "Your token has been created successfully.",
+        description: `Your token "${formData.name}" (${formData.symbol}) has been created successfully on the Solana blockchain.`,
         variant: "default",
       });
       
@@ -250,7 +329,7 @@ const TokenForm = () => {
           amount: "",
           decimals: "18",
           ownerAddress: localStorage.getItem('walletAddress') || "",
-          referralCode: "", // Добавляем поле referralCode в initialState
+          referralCode: "",
           websiteUrl: "",
           twitterUrl: "",
           telegramUrl: "",
@@ -262,7 +341,8 @@ const TokenForm = () => {
           revokeMint: true,
           revokeUpdate: true,
         });
-      }, 3000);
+        setCreatedTokenAddress(null);
+      }, 5000);
     } catch (error) {
       console.error("Error creating token:", error);
       toast({
@@ -290,6 +370,30 @@ const TokenForm = () => {
             </div>
             <div>
               <span className="text-sm text-blue-400">Referral code applied: {referralCode}</span>
+            </div>
+          </div>
+        )}
+        
+        {createdTokenAddress && (
+          <div className="mb-6 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-sm font-medium text-green-400">Token created successfully!</span>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(createdTokenAddress);
+                  toast({
+                    title: "Copied!",
+                    description: "Token address copied to clipboard.",
+                    variant: "default",
+                  });
+                }}
+                className="text-xs bg-green-900/40 text-green-400 p-1 rounded"
+              >
+                <Copy className="h-3 w-3" />
+              </button>
+            </div>
+            <div className="text-xs text-green-400 break-all">
+              {createdTokenAddress}
             </div>
           </div>
         )}
@@ -478,10 +582,12 @@ const TokenForm = () => {
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            disabled={isSubmitting || isSuccess}
+            disabled={isSubmitting || isSuccess || !publicKey}
             className={`w-full relative btn-hover py-3 rounded-lg font-medium transition-all duration-300 ${
               isSuccess
                 ? "bg-green-600 text-white"
+                : !publicKey
+                ? "bg-gray-600 text-white cursor-not-allowed"
                 : "bg-primary text-white"
             }`}
           >
@@ -497,6 +603,8 @@ const TokenForm = () => {
               <span className="flex items-center justify-center">
                 <Check className="mr-2 h-4 w-4" /> Token Created!
               </span>
+            ) : !publicKey ? (
+              "Connect Wallet to Create Token"
             ) : (
               "Create Token"
             )}
