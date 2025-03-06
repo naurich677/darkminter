@@ -77,7 +77,7 @@
 }
 
 .wallet-adapter-button:hover {
-  background-color: theme('colors.primary.500') !important;
+  background-color: theme('colors.primary.400') !important;
   transform: scale(1.05);
 }
 

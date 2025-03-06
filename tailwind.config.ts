@@ -30,7 +30,17 @@ export default {
 				foreground: 'hsl(var(--foreground))',
 				primary: {
 					DEFAULT: 'hsl(var(--primary))',
-					foreground: 'hsl(var(--primary-foreground))'
+					foreground: 'hsl(var(--primary-foreground))',
+					50: '#f3effb',
+					100: '#e6def7',
+					200: '#d0c0ef',
+					300: '#b399e4',
+					400: '#9b87f5',
+					500: '#7c5ad7', // Added this for the hover state
+					600: '#6a3fc8',
+					700: '#5a35a5',
+					800: '#4b2f85',
+					900: '#3b266a'
 				},
 				secondary: {
 					DEFAULT: 'hsl(var(--secondary))',
