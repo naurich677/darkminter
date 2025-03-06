@@ -3,11 +3,13 @@ import { motion } from "framer-motion";
 import { Share2, Copy, Check, RefreshCcw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useWallet, useConnection } from "@solana/wallet-adapter-react";
+import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 
 const Profile = () => {
   const { toast } = useToast();
   const { publicKey, connected, wallet } = useWallet();
+  const { connection } = useConnection();
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [solBalance, setSolBalance] = useState<number | null>(null);
   const [tokens, setTokens] = useState<any[]>([]);
@@ -19,6 +21,7 @@ const Profile = () => {
   const [isGeneratingCode, setIsGeneratingCode] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(false);
+  const [isLoadingBalance, setIsLoadingBalance] = useState(false);
 
   const container = {
     hidden: { opacity: 0 },
@@ -41,7 +44,7 @@ const Profile = () => {
         const address = publicKey.toString();
         setWalletAddress(address);
         
-        setSolBalance(Math.random() * 10);
+        fetchWalletBalance();
         
         loadUserTokens(address);
         
@@ -50,7 +53,22 @@ const Profile = () => {
     };
     
     checkWallet();
-  }, [publicKey]);
+  }, [publicKey, connection]);
+
+  const fetchWalletBalance = async () => {
+    if (!publicKey || !connection) return;
+    
+    setIsLoadingBalance(true);
+    try {
+      const balance = await connection.getBalance(publicKey);
+      setSolBalance(balance / LAMPORTS_PER_SOL);
+    } catch (error) {
+      console.error("Error fetching balance:", error);
+      setSolBalance(0);
+    } finally {
+      setIsLoadingBalance(false);
+    }
+  };
 
   const loadUserTokens = async (address: string) => {
     setIsLoadingData(true);
@@ -228,11 +246,22 @@ const Profile = () => {
             </div>
             <div>
               <h2 className="text-xl font-semibold mb-1">Balance</h2>
-              <span className="text-lg text-white">{solBalance?.toFixed(2)} SOL</span>
+              {isLoadingBalance ? (
+                <div className="flex items-center">
+                  <svg className="animate-spin h-4 w-4 mr-2 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span className="text-gray-400">Loading...</span>
+                </div>
+              ) : (
+                <span className="text-lg text-white">{solBalance?.toFixed(5)} SOL</span>
+              )}
               <div className="mt-2">
                 <button
-                  onClick={() => setSolBalance(Math.random() * 10)}
+                  onClick={fetchWalletBalance}
                   className="text-xs bg-secondary/50 text-gray-300 rounded-full px-2 py-1 flex items-center"
+                  disabled={isLoadingBalance}
                 >
                   <RefreshCcw className="h-3 w-3 mr-1" /> Refresh
                 </button>
