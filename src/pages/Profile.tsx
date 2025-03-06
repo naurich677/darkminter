@@ -1,12 +1,13 @@
-
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Share2, Copy, Check, RefreshCcw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useWallet } from "@solana/wallet-adapter-react";
 
 const Profile = () => {
   const { toast } = useToast();
+  const { publicKey, connected, wallet } = useWallet();
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [solBalance, setSolBalance] = useState<number | null>(null);
   const [tokens, setTokens] = useState<any[]>([]);
@@ -35,27 +36,21 @@ const Profile = () => {
   };
 
   useEffect(() => {
-    // Simulate checking if wallet is connected
-    // In a real implementation, this would use the actual wallet connection
     const checkWallet = async () => {
-      // This is just a placeholder - in a real app, you would check the actual connected wallet
-      const storedAddress = localStorage.getItem('walletAddress');
-      
-      if (storedAddress) {
-        setWalletAddress(storedAddress);
-        // Simulate fetching SOL balance
+      if (publicKey) {
+        const address = publicKey.toString();
+        setWalletAddress(address);
+        
         setSolBalance(Math.random() * 10);
         
-        // Load user tokens
-        loadUserTokens(storedAddress);
+        loadUserTokens(address);
         
-        // Load referral data
-        loadReferralData(storedAddress);
+        loadReferralData(address);
       }
     };
     
     checkWallet();
-  }, []);
+  }, [publicKey]);
 
   const loadUserTokens = async (address: string) => {
     setIsLoadingData(true);
@@ -77,7 +72,6 @@ const Profile = () => {
 
   const loadReferralData = async (address: string) => {
     try {
-      // Check if user has a referral code
       const { data: referralData, error: referralError } = await supabase
         .from('referrals')
         .select('*')
@@ -91,7 +85,6 @@ const Profile = () => {
       if (referralData) {
         setReferralCode(referralData.referral_code);
         
-        // Load referral statistics
         const { data: statsData, error: statsError } = await supabase
           .from('referral_uses')
           .select('*')
@@ -116,10 +109,8 @@ const Profile = () => {
     
     setIsGeneratingCode(true);
     try {
-      // Generate a random code
       const code = Math.random().toString(36).substring(2, 10).toUpperCase();
       
-      // Save to Supabase
       const { error } = await supabase
         .from('referrals')
         .insert({
@@ -162,14 +153,13 @@ const Profile = () => {
   };
 
   const connectWallet = () => {
-    // In a real implementation, this would trigger wallet connection
-    const mockAddress = "0x" + Math.random().toString(36).substring(2, 15);
-    setWalletAddress(mockAddress);
-    localStorage.setItem('walletAddress', mockAddress);
-    setSolBalance(Math.random() * 10);
+    toast({
+      title: "Wallet Connection",
+      description: "Please use the wallet button in the navigation bar to connect.",
+    });
   };
 
-  if (!walletAddress) {
+  if (!connected || !publicKey) {
     return (
       <div className="min-h-screen pt-24 pb-12 px-6 flex items-center justify-center">
         <motion.div
@@ -220,21 +210,33 @@ const Profile = () => {
             <div>
               <h2 className="text-xl font-semibold mb-1">Wallet Address</h2>
               <div className="flex items-center">
-                <span className="text-sm text-gray-400 truncate max-w-xs">{walletAddress}</span>
+                <span className="text-sm text-gray-400 truncate max-w-xs">{publicKey?.toString()}</span>
                 <button 
                   className="ml-2 text-gray-400 hover:text-white transition-colors"
                   onClick={() => {
-                    navigator.clipboard.writeText(walletAddress || '');
+                    navigator.clipboard.writeText(publicKey?.toString() || '');
                     toast({ title: "Copied!", description: "Address copied to clipboard." });
                   }}
                 >
                   <Copy className="h-4 w-4" />
                 </button>
               </div>
+              <div className="mt-2 flex items-center">
+                <span className="text-sm text-gray-400">Wallet type: </span>
+                <span className="text-sm text-white ml-1">{wallet?.adapter.name || 'Unknown'}</span>
+              </div>
             </div>
             <div>
               <h2 className="text-xl font-semibold mb-1">Balance</h2>
               <span className="text-lg text-white">{solBalance?.toFixed(2)} SOL</span>
+              <div className="mt-2">
+                <button
+                  onClick={() => setSolBalance(Math.random() * 10)}
+                  className="text-xs bg-secondary/50 text-gray-300 rounded-full px-2 py-1 flex items-center"
+                >
+                  <RefreshCcw className="h-3 w-3 mr-1" /> Refresh
+                </button>
+              </div>
             </div>
           </div>
         </motion.div>
