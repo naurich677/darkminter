@@ -20,12 +20,13 @@ const item = {
 
 const Index = () => {
   return (
-    <div className="relative min-h-screen w-full flex flex-col">
+    <div className="relative min-h-screen w-full flex flex-col bg-background">
+      {/* Dark background overlay */}
       <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-background/95 z-0" />
       
-      {/* Subtle gradient orbs */}
-      <div className="absolute top-[10%] left-[10%] w-[30rem] h-[30rem] bg-primary/5 rounded-full filter blur-[8rem] z-0"></div>
-      <div className="absolute bottom-[10%] right-[10%] w-[30rem] h-[30rem] bg-blue-500/5 rounded-full filter blur-[8rem] z-0"></div>
+      {/* Gradient orbs with higher opacity */}
+      <div className="absolute top-[10%] left-[10%] w-[30rem] h-[30rem] bg-primary/20 rounded-full filter blur-[8rem] z-0"></div>
+      <div className="absolute bottom-[10%] right-[10%] w-[30rem] h-[30rem] bg-blue-500/20 rounded-full filter blur-[8rem] z-0"></div>
       
       <main className="flex-1 flex flex-col items-center justify-center px-6 relative z-10">
         <motion.div
