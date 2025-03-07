@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Check, Link, Twitter, MessageCircle, MessageSquare, AlertCircle, Code } from "lucide-react";
+import { Check, Link, Twitter, MessageCircle, MessageSquare, AlertCircle, Code, Copy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useLocation } from "react-router-dom";
 import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 import { PublicKey, Transaction, Keypair, SystemProgram, sendAndConfirmTransaction } from "@solana/web3.js";
-import { Token, TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import * as spl from "@solana/spl-token";
 
 const TokenForm = () => {
   const { toast } = useToast();
@@ -163,22 +163,22 @@ const TokenForm = () => {
       
       const mintDecimals = Number(formData.decimals);
       
-      const mintRent = await connection.getMinimumBalanceForRentExemption(Token.getMintLen());
+      const mintRent = await connection.getMinimumBalanceForRentExemption(spl.MintLayout.span);
       
       const createTokenTransaction = new Transaction().add(
         SystemProgram.createAccount({
           fromPubkey: publicKey,
           newAccountPubkey: mintAccount.publicKey,
-          space: Token.getMintLen(),
+          space: spl.MintLayout.span,
           lamports: mintRent,
-          programId: TOKEN_PROGRAM_ID,
+          programId: spl.TOKEN_PROGRAM_ID,
         }),
-        Token.createInitMintInstruction(
-          TOKEN_PROGRAM_ID,
+        spl.createInitializeMintInstruction(
           mintAccount.publicKey,
           mintDecimals,
           publicKey,
-          publicKey
+          publicKey,
+          spl.TOKEN_PROGRAM_ID
         )
       );
       
