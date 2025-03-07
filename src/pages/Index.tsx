@@ -20,8 +20,8 @@ const item = {
 
 const Index = () => {
   return (
-    <div className="relative min-h-screen flex flex-col">
-      <div className="absolute inset-0 bg-gradient-to-br from-black via-black to-black/95 z-0" />
+    <div className="relative min-h-screen w-full flex flex-col">
+      <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-background/95 z-0" />
       
       {/* Subtle gradient orbs */}
       <div className="absolute top-[10%] left-[10%] w-[30rem] h-[30rem] bg-primary/5 rounded-full filter blur-[8rem] z-0"></div>
